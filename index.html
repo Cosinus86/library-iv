@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Медиа-библиотека</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .section-info {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .section-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .material-count {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .materials-list {
+            padding: 20px;
+        }
+        
+        .material-item {
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+        }
+        
+        .material-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .material-type {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: #667eea;
+            color: white;
+            border-radius: 4px;
+            text-align: center;
+            line-height: 24px;
+            margin-right: 10px;
+        }
+        
+        .material-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+        
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .loader {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .loader-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            text-align: center;
+            padding: 40px 20px;
+            color: #dc3545;
+        }
+        
+        .error button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .video-player {
+            width: 100%;
+            height: 300px;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        
+        .video-player video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 20px;
+            border-top: 1px solid #e9ecef;
+            background: #f8f9fa;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .nav-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .progress {
+            text-align: center;
+            line-height: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Медиа-библиотека</h1>
+        </div>
+        
+        <div class="section-info" id="sectionInfo">
+            <div class="loader">
+                <div class="loader-spinner"></div>
+                <div>Загрузка раздела...</div>
+            </div>
+        </div>
+        
+        <div class="materials-list" id="materialsList">
+            <div class="loader">
+                <div class="loader-spinner"></div>
+                <div>Загрузка материалов...</div>
+            </div>
+        </div>
+        
+        <div class="navigation" id="navigation" style="display: none;">
+            <button class="nav-btn" id="prevBtn" disabled>← Назад</button>
+            <div class="progress" id="progress">1/1</div>
+            <button class="nav-btn" id="nextBtn" disabled>Вперед →</button>
+        </div>
+    </div>
+
+    <script>
+        // Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // Получаем ID раздела из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const sectionId = urlParams.get('section');
+        
+        let materials = [];
+        let currentIndex = 0;
+        let sectionData = null;
+        
+        // Загрузка данных раздела
+        async function loadSection() {
+            if (!sectionId) {
+                showError('Раздел не указан');
+                return;
+            }
+            
+            try {
+                // Формируем URL к JSON файлу
+                // В реальности нужно получать данные от бота
+                const jsonUrl = `data/section_${sectionId}.json`;
+                
+                // Загружаем JSON файл
+                const response = await fetch(jsonUrl);
+                
+                if (!response.ok) {
+                    throw new Error('JSON файл не найден');
+                }
+                
+                sectionData = await response.json();
+                materials = sectionData.materials || [];
+                
+                updateUI();
+                
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+                showError('Не удалось загрузить данные раздела');
+            }
+        }
+        
+        function updateUI() {
+            // Обновляем информацию о разделе
+            const sectionInfo = document.getElementById('sectionInfo');
+            if (sectionData) {
+                sectionInfo.innerHTML = `
+                    <div class="section-name">${sectionData.icon || '📁'} ${sectionData.name || 'Раздел'}</div>
+                    <div class="material-count">${materials.length} материалов</div>
+                `;
+            }
+            
+            // Отображаем материалы
+            const materialsList = document.getElementById('materialsList');
+            
+            if (materials.length === 0) {
+                materialsList.innerHTML = `
+                    <div class="empty-state">
+                        <h3>📭 Раздел пуст</h3>
+                        <p>В этом разделе пока нет материалов</p>
+                    </div>
+                `;
+                document.getElementById('navigation').style.display = 'none';
+                return;
+            }
+            
+            // Отображаем текущий материал
+            const material = materials[currentIndex];
+            
+            let content = '';
+            
+            // Видео плеер для видео
+            if (material.type === 'video') {
+                content = `
+                    <div class="video-player">
+                        <video id="videoPlayer" controls>
+                            <source src="https://example.com/video.mp4" type="video/mp4">
+                            Ваш браузер не поддерживает видео.
+                        </video>
+                    </div>
+                `;
+            }
+            
+            content += `
+                <div class="material-item">
+                    <div style="display: flex; align-items: flex-start;">
+                        <div class="material-type">
+                            ${getMaterialIcon(material.type)}
+                        </div>
+                        <div>
+                            <div class="material-title">${material.title}</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                                ${new Date(material.added_at).toLocaleDateString('ru-RU')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            materialsList.innerHTML = content;
+            
+            // Обновляем навигацию
+            updateNavigation();
+        }
+        
+        function updateNavigation() {
+            const navigation = document.getElementById('navigation');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const progress = document.getElementById('progress');
+            
+            if (materials.length > 1) {
+                navigation.style.display = 'flex';
+                prevBtn.disabled = currentIndex === 0;
+                nextBtn.disabled = currentIndex === materials.length - 1;
+                progress.textContent = `${currentIndex + 1}/${materials.length}`;
+                
+                // Обработчики кнопок
+                prevBtn.onclick = () => {
+                    if (currentIndex > 0) {
+                        currentIndex--;
+                        updateUI();
+                    }
+                };
+                
+                nextBtn.onclick = () => {
+                    if (currentIndex < materials.length - 1) {
+                        currentIndex++;
+                        updateUI();
+                    }
+                };
+            } else {
+                navigation.style.display = 'none';
+            }
+        }
+        
+        function getMaterialIcon(type) {
+            const icons = {
+                'video': '🎬',
+                'photo': '📷',
+                'document': '📄',
+                'link': '🔗'
+            };
+            return icons[type] || '📁';
+        }
+        
+        function showError(message) {
+            document.getElementById('sectionInfo').innerHTML = `
+                <div class="error">
+                    <h3>❌ Ошибка</h3>
+                    <p>${message}</p>
+                    <button onclick="location.reload()">Повторить</button>
+                </div>
+            `;
+            document.getElementById('materialsList').innerHTML = '';
+        }
+        
+        // Свайпы на мобильных
+        let startX = 0;
+        let endX = 0;
+        
+        document.addEventListener('touchstart', e => {
+            startX = e.touches[0].clientX;
+        });
+        
+        document.addEventListener('touchend', e => {
+            endX = e.changedTouches[0].clientX;
+            handleSwipe();
+        });
+        
+        function handleSwipe() {
+            const threshold = 50;
+            const diff = startX - endX;
+            
+            if (Math.abs(diff) > threshold) {
+                if (diff > 0 && currentIndex < materials.length - 1) {
+                    currentIndex++;
+                    updateUI();
+                } else if (diff < 0 && currentIndex > 0) {
+                    currentIndex--;
+                    updateUI();
+                }
+            }
+        }
+        
+        // Загружаем данные при старте
+        loadSection();
+    </script>
+</body>
+</html>
