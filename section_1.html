@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru" prefix="og: https://ogp.me/ns#">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Физика - Библиотека РЦ</title>
+    
+    <!-- ВАЖНО: Укажите URL вашей картинки -->
+    <meta property="og:image" content="https://cosinus86.github.io/library-iv/images/physics_cover.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:title" content="Физика - Библиотека РЦ" />
+    <meta property="og:description" content="Учебные материалы: 15 файлов • Открыть в Telegram" />
+    <meta property="og:url" content="https://cosinus86.github.io/library-iv/section_1.html" />
+    
+    <style>
+        /* Стили для красивого отображения */
+        body {
+            background: url('https://cosinus86.github.io/library-iv/images/physics_cover.jpg');
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .overlay {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 600px;
+        }
+        
+        h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+        
+        .stats {
+            font-size: 20px;
+            margin: 20px 0;
+        }
+        
+        .button {
+            display: inline-block;
+            background: #0088cc;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 18px;
+            margin-top: 20px;
+        }
+    </style>
+    
+    <!-- Редирект в Telegram -->
+    <script>
+        if (navigator.userAgent.includes('Telegram')) {
+            setTimeout(() => {
+                window.location.href = 'https://t.me/VideomatRC_bot?start=section_1';
+            }, 100);
+        }
+    </script>
+</head>
+<body>
+    <div class="overlay">
+        <h1>📚 Физика</h1>
+        <div class="stats">
+            📁 15 учебных файлов<br>
+            🎥 5 видеоуроков<br>
+            📄 10 материалов
+        </div>
+        <p>Нажмите для открытия в Telegram</p>
+        <a href="https://t.me/VideomatRC_bot?start=section_1" class="button">
+            📱 Открыть в библиотеке
+        </a>
+    </div>
+</body>
+</html>
